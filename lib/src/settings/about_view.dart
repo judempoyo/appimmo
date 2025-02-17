@@ -9,6 +9,7 @@ class AboutUsPage extends StatelessWidget {
   final SettingsController settingsController;
 
   const AboutUsPage({super.key, required this.settingsController});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -26,7 +27,7 @@ class AboutUsPage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
-                'Bienvenue dans notre application !',
+                'Bienvenue dans APPIMMO !',
                 style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -35,14 +36,21 @@ class AboutUsPage extends StatelessWidget {
               const SizedBox(height: 20),
               Text(
                 'Notre application est conçue pour offrir une expérience fluide et agréable à nos utilisateurs. Nous nous efforçons de fournir des fonctionnalités et des services de haute qualité qui répondent aux besoins de notre communauté.',
-                style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
               ),
               const SizedBox(height: 20),
               _buildSectionTitle('Notre équipe :'),
               const SizedBox(height: 10),
-              _buildTeamMember('John Doe - Fondateur et PDG'),
               _buildTeamMember(
-                  'Jane Doe - Co-fondatrice et directrice technique'),
+                  'Junior OINDA - fondateur et directeur technique'),
+              _buildTeamMember('Jude MPOYO - Développeur Web et Mobile'),
+              const SizedBox(height: 20),
+              _buildSectionTitle('Historique de l\'agence :'),
+              const SizedBox(height: 10),
+              Text(
+                'APPIMMO a été créée en 2024  par un groupe de professionnels de l\'immobilier passionnés par leur métier. Depuis sa création, l\'agence a aidé des centaines de personnes à trouver leur bien immobilier idéal.',
+                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+              ),
               const SizedBox(height: 20),
               _buildSectionTitle('Contactez-nous :'),
               const SizedBox(height: 10),
@@ -74,6 +82,20 @@ class AboutUsPage extends StatelessWidget {
               Text(
                 'Nous prenons votre vie privée au sérieux. Veuillez lire notre politique de confidentialité pour plus d\'informations.',
                 style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+              ),
+              const SizedBox(height: 20),
+              _buildSectionTitle('Liens utiles :'),
+              const SizedBox(height: 10),
+              _buildUsefulLink(
+                context,
+                'Site web',
+                'https://www.appimmo.com',
+              ),
+              const SizedBox(height: 10),
+              _buildUsefulLink(
+                context,
+                'Blog',
+                'https://www.appimmo.com/blog',
               ),
             ],
           ),
@@ -164,6 +186,31 @@ class AboutUsPage extends StatelessWidget {
         _buildSocialMediaIcon('https://www.instagram.com/example',
             FontAwesomeIcons.instagram, context),
       ],
+    );
+  }
+
+  Widget _buildUsefulLink(BuildContext context, String text, String url) {
+    return GestureDetector(
+      onTap: () async {
+        final Uri uri = Uri.parse(url);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Impossible de lancer le lien'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      },
+      child: Text(
+        text,
+        style: TextStyle(
+            fontSize: 18,
+            color: settingsController.primaryColor,
+            decoration: TextDecoration.underline),
+      ),
     );
   }
 }

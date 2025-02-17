@@ -1,8 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:appimmo/src/home/home_view.dart';
 import 'package:appimmo/src/settings/settings_controller.dart';
 import 'dart:ui'; // Pour ImageFilter
 import 'auth_service.dart';
+import 'package:image_picker/image_picker.dart';
 
 class SignUpPage extends StatefulWidget {
   static const routeName = '/signup';
@@ -27,6 +30,7 @@ class _SignUpPageState extends State<SignUpPage>
   String adresse = '';
   late AnimationController _controller;
   late Animation<double> _animation;
+  File? _image;
 
   final AuthService _authService = AuthService();
 
@@ -45,6 +49,18 @@ class _SignUpPageState extends State<SignUpPage>
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  Future<void> _selectImage() async {
+    final ImagePicker _picker = ImagePicker();
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    setState(() {
+      if (image != null) {
+        _image = File(image.path);
+      } else {
+        _image = null;
+      }
+    });
   }
 
   @override
@@ -380,6 +396,46 @@ class _SignUpPageState extends State<SignUpPage>
                                                 setState(() => adresse = value),
                                           ),
                                         ),
+                                        SizedBox(
+                                          width: screenWidth > 600
+                                              ? constraints.maxWidth / 2 - 10
+                                              : constraints.maxWidth,
+                                          child: ElevatedButton(
+                                            onPressed: _selectImage,
+                                            style: ElevatedButton.styleFrom(
+                                              minimumSize:
+                                                  Size(double.infinity, 40),
+                                              backgroundColor: isDarkMode
+                                                  ? widget.settingsController
+                                                      .primaryColor
+                                                      .withOpacity(0.7)
+                                                  : widget.settingsController
+                                                      .primaryColor,
+                                              padding: EdgeInsets.symmetric(
+                                                  vertical: 15),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                              ),
+                                            ),
+                                            child: Text(
+                                              'Sélectionner une image de profil',
+                                              style: TextStyle(
+                                                  color: isDarkMode
+                                                      ? Colors.white
+                                                      : Colors.white),
+                                            ),
+                                          ),
+                                        ),
+                                        SizedBox(
+                                          width: screenWidth > 600
+                                              ? constraints.maxWidth / 2 - 10
+                                              : constraints.maxWidth,
+                                          child: _image != null
+                                              ? Image.file(_image!)
+                                              : Text(
+                                                  'Aucune image sélectionnée'),
+                                        ),
                                       ],
                                     ),
                                     SizedBox(height: 20),
@@ -394,7 +450,8 @@ class _SignUpPageState extends State<SignUpPage>
                                                   prenom,
                                                   role,
                                                   telephone,
-                                                  adresse);
+                                                  adresse,
+                                                  _image!.path);
                                           if (user != null) {
                                             Navigator.pushReplacementNamed(
                                                 context, HomePage.routeName);

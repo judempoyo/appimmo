@@ -1,115 +1,211 @@
 import 'dart:io';
 
-import 'package:appimmo/src/property/property_controller.dart';
+import 'package:appimmo/src/property/property_detail_screen.dart';
+import 'package:appimmo/src/settings/settings_controller.dart';
+import 'package:flutter/material.dart';
 import 'package:appimmo/src/property/property_model.dart';
 import 'package:appimmo/src/property/property_service.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
 
-class PropertiesListScreen extends StatefulWidget {
-  const PropertiesListScreen({Key? key}) : super(key: key);
+class PropertyListPage extends StatefulWidget {
+  final SettingsController settingsController;
+
+  const PropertyListPage({super.key, required this.settingsController});
 
   @override
-  _PropertiesListScreenState createState() => _PropertiesListScreenState();
+  _PropertyListPageState createState() => _PropertyListPageState();
 }
 
-class _PropertiesListScreenState extends State<PropertiesListScreen> {
-  final PropertyController _propertyController = PropertyController();
-  List<Property> _properties = [];
-  @override
-  void initState() {
-    super.initState();
-    _loadProperties();
-  }
-
-  Future<void> _loadProperties() async {
-    final properties = await _propertyController.getAllProperties();
-    setState(() {
-      _properties = properties;
-    });
-  }
-
-  void _navigateToPropertyForm(BuildContext context, {Property? property}) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => PropertyFormScreen(property: property),
-      ),
-    ).then((_) => _loadProperties());
-  }
-
-  void _deleteProperty(String propertyId) async {
-    await _propertyController.deleteProperty(propertyId);
-    _loadProperties();
-  }
-
+class _PropertyListPageState extends State<PropertyListPage> {
+  final PropertyService _propertyService = PropertyService();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Liste des Biens Immobiliers'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () => _navigateToPropertyForm(context),
-          ),
-        ],
+        title: Text('Propriétés'),
       ),
-      body: ListView.builder(
-        itemCount: _properties.length,
-        itemBuilder: (context, index) {
-          final property = _properties[index];
-          return ListTile(
-            title: Text(property.titre),
-            subtitle: Text('${property.type} - ${property.prix} €'),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.edit),
-                  onPressed: () =>
-                      _navigateToPropertyForm(context, property: property),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete),
-                  onPressed: () => _deleteProperty(property.propertyId!),
-                ),
-              ],
-            ),
+      body: FutureBuilder(
+        future: _propertyService.getAllProperties(),
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            return ListView.builder(
+              itemCount: snapshot.data!.length,
+              itemBuilder: (context, index) {
+                return Card(
+                  elevation: 5,
+                  margin: EdgeInsets.all(10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(15.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            PopupMenuButton(
+                              icon: Icon(Icons.more_horiz),
+                              itemBuilder: (context) => [
+                                PopupMenuItem(
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.remove_red_eye),
+                                      SizedBox(width: 10),
+                                      Text('Voir la propriété'),
+                                    ],
+                                  ),
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            PropertyDetailsPage(
+                                          property: snapshot.data![index],
+                                          settingsController:
+                                              widget.settingsController,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                PopupMenuItem(
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.edit),
+                                      SizedBox(width: 10),
+                                      Text('Modifier'),
+                                    ],
+                                  ),
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => PropertyFormPage(
+                                          property: snapshot.data![index],
+                                          settingsController:
+                                              widget.settingsController,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                PopupMenuItem(
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.delete),
+                                      SizedBox(width: 10),
+                                      Text('Supprimer'),
+                                    ],
+                                  ),
+                                  onTap: () async {
+                                    await showDialog(
+                                      context: context,
+                                      builder: (context) => AlertDialog(
+                                        title: Text('Confirmation'),
+                                        content: Text(
+                                            'Voulez-vous vraiment supprimer cette propriété ?'),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () {
+                                              Navigator.pop(context);
+                                            },
+                                            child: Text('Non'),
+                                          ),
+                                          TextButton(
+                                            onPressed: () async {
+                                              await _propertyService
+                                                  .deleteProperty(snapshot
+                                                      .data![index]
+                                                      .propertyId!);
+                                              setState(() {});
+                                              Navigator.pop(context);
+                                            },
+                                            child: Text('Oui'),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
+                            )
+                          ],
+                        ),
+                        Text(
+                          snapshot.data![index].titre,
+                          style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: widget.settingsController.primaryColor),
+                        ),
+                        SizedBox(height: 5),
+                        Text(
+                          snapshot.data![index].adresse,
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+          } else {
+            return Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => PropertyFormPage(
+                      settingsController: widget.settingsController,
+                    )),
           );
         },
+        child: Icon(Icons.add),
+        backgroundColor: widget.settingsController.primaryColor,
       ),
     );
   }
 }
 
-class PropertyFormScreen extends StatefulWidget {
+class PropertyFormPage extends StatefulWidget {
   final Property? property;
+  final SettingsController settingsController;
 
-  const PropertyFormScreen({Key? key, this.property}) : super(key: key);
+  PropertyFormPage({this.property, required this.settingsController});
 
   @override
-  _PropertyFormScreenState createState() => _PropertyFormScreenState();
+  _PropertyFormPageState createState() => _PropertyFormPageState();
 }
 
-class _PropertyFormScreenState extends State<PropertyFormScreen> {
+class _PropertyFormPageState extends State<PropertyFormPage> {
+  final PropertyService _propertyService = PropertyService();
   final _formKey = GlobalKey<FormState>();
-  final _propertyController = PropertyController();
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-
-  late String _titre;
-  late String _description;
-  late String _type;
-  late double _prix;
-  late double _surface;
-  late int _nombrePieces;
-  late String _adresse;
-  late String _ville;
-  late String _codePostal;
-  late String _pays;
-  File? _coverImage;
-  List<File?> _images = [];
+  String _titre = '';
+  String _description = '';
+  String _type = '';
+  double _prix = 0;
+  double _surface = 0;
+  int _nombrePieces = 0;
+  int _nombreSallesDeBain = 0;
+  String _adresse = '';
+  String _ville = '';
+  bool _disponible = true;
+  DateTime _dateAjout = DateTime.now();
+  String _agentId = '';
+  List<String> _images = [];
+  List<String> _favorites = [];
+  String _coverUrl = '';
+  bool _isFeatured = false;
+  String _statut = '';
+  List<String> _tags = [];
 
   @override
   void initState() {
@@ -121,116 +217,18 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
       _prix = widget.property!.prix;
       _surface = widget.property!.surface;
       _nombrePieces = widget.property!.nombrePieces;
+      _nombreSallesDeBain = widget.property!.nombreSallesDeBain;
       _adresse = widget.property!.adresse;
       _ville = widget.property!.ville;
-      _codePostal = widget.property!.codePostal;
-      _pays = widget.property!.pays;
-    }
-  }
-
-  Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-
-    if (pickedFile != null) {
-      setState(() {
-        _coverImage = File(pickedFile.path);
-      });
-    }
-  }
-
-  Future<void> _addImage() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-
-    if (pickedFile != null) {
-      setState(() {
-        _images.add(File(pickedFile.path));
-      });
-    }
-  }
-
-  Future<void> _saveProperty() async {
-    if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
-
-      // Upload cover image and get its URL
-      String coverUrl = '';
-      if (_coverImage != null) {
-        coverUrl = await _propertyController.uploadImage(_coverImage!);
-      } else if (widget.property != null) {
-        coverUrl = widget.property!.cover_url;
-      }
-
-      // Upload additional images and get their URLs
-      List<String> imageUrls = [];
-      for (var image in _images) {
-        if (image != null) {
-          final url = await _propertyController.uploadImage(image);
-          imageUrls.add(url);
-        }
-      }
-
-      final property = Property(
-        propertyId: widget.property?.propertyId ?? '',
-        titre: _titre,
-        description: _description,
-        type: _type,
-        prix: _prix,
-        surface: _surface,
-        nombrePieces: _nombrePieces,
-        adresse: _adresse,
-        ville: _ville,
-        codePostal: _codePostal,
-        pays: _pays,
-        disponible: true,
-        agentId: _auth.currentUser!.uid,
-        likes: widget.property?.likes ?? [],
-        comments: widget.property?.comments ?? [],
-        images: imageUrls,
-        cover_url: coverUrl,
-      );
-
-      if (widget.property == null) {
-        _propertyController
-            .createProperty(property, _coverImage, _images)
-            .then((_) {
-          Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Bien ajoutée avec succès !'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }).catchError((error) {
-          Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Erreur lors de l\'ajout : $error'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        });
-      } else {
-        _propertyController.updateProperty(property).then((_) {
-          Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Bien mise à jour avec succès !'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }).catchError((error) {
-          Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Erreur lors de la mise à jour : $error'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        });
-      }
-      Navigator.pop(context);
+      _disponible = widget.property!.disponible;
+      _dateAjout = widget.property!.dateAjout;
+      _agentId = widget.property!.agentId;
+      _images = widget.property!.images;
+      _favorites = widget.property!.favorites;
+      _coverUrl = widget.property!.cover_url;
+      _isFeatured = widget.property!.isFeatured;
+      _statut = widget.property!.statut;
+      _tags = widget.property!.tags;
     }
   }
 
@@ -239,152 +237,358 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-            widget.property == null ? 'Ajouter un Bien' : ' Modifier un Bien'),
+            widget.property != null ? 'Modifier propriété' : 'Créer propriété'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              TextFormField(
-                initialValue: _titre,
-                decoration: const InputDecoration(labelText: 'Titre'),
-                validator: (value) =>
-                    value!.isEmpty ? 'Veuillez entrer un titre' : null,
-                onSaved: (value) => _titre = value!,
-              ),
-              TextFormField(
-                initialValue: _description,
-                decoration: const InputDecoration(labelText: 'Description'),
-                validator: (value) =>
-                    value!.isEmpty ? 'Veuillez entrer une description' : null,
-                onSaved: (value) => _description = value!,
-              ),
-              TextFormField(
-                initialValue: _type,
-                decoration: const InputDecoration(labelText: 'Type'),
-                validator: (value) =>
-                    value!.isEmpty ? 'Veuillez entrer un type' : null,
-                onSaved: (value) => _type = value!,
-              ),
-              TextFormField(
-                initialValue: _prix.toString(),
-                decoration: const InputDecoration(labelText: 'Prix'),
-                validator: (value) =>
-                    value!.isEmpty ? 'Veuillez entrer un prix' : null,
-                onSaved: (value) => _prix = double.parse(value!),
-              ),
-              TextFormField(
-                initialValue: _surface.toString(),
-                decoration: const InputDecoration(labelText: 'Surface'),
-                validator: (value) =>
-                    value!.isEmpty ? 'Veuillez entrer une surface' : null,
-                onSaved: (value) => _surface = double.parse(value!),
-              ),
-              TextFormField(
-                initialValue: _nombrePieces.toString(),
-                decoration:
-                    const InputDecoration(labelText: 'Nombre de Pièces'),
-                validator: (value) => value!.isEmpty
-                    ? 'Veuillez entrer le nombre de pièces'
-                    : null,
-                onSaved: (value) => _nombrePieces = int.parse(value!),
-              ),
-              TextFormField(
-                initialValue: _adresse,
-                decoration: const InputDecoration(labelText: 'Adresse'),
-                validator: (value) =>
-                    value!.isEmpty ? 'Veuillez entrer une adresse' : null,
-                onSaved: (value) => _adresse = value!,
-              ),
-              TextFormField(
-                initialValue: _ville,
-                decoration: const InputDecoration(labelText: 'Ville'),
-                validator: (value) =>
-                    value!.isEmpty ? 'Veuillez entrer une ville' : null,
-                onSaved: (value) => _ville = value!,
-              ),
-              TextFormField(
-                initialValue: _codePostal,
-                decoration: const InputDecoration(labelText: 'Code Postal'),
-                validator: (value) =>
-                    value!.isEmpty ? 'Veuillez entrer un code postal' : null,
-                onSaved: (value) => _codePostal = value!,
-              ),
-              TextFormField(
-                initialValue: _pays,
-                decoration: const InputDecoration(labelText: 'Pays'),
-                validator: (value) =>
-                    value!.isEmpty ? 'Veuillez entrer un pays' : null,
-                onSaved: (value) => _pays = value!,
-              ),
-              const SizedBox(height: 20),
-              // Bouton pour télécharger l'image de couverture
-              ElevatedButton(
-                onPressed: _pickImage,
-                child: Text('Télécharger une image de couverture'),
-              ),
-              const SizedBox(height: 20),
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                TextFormField(
+                  initialValue: _titre,
+                  decoration: InputDecoration(
+                    labelText: 'Titre',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Entrez un titre';
+                    }
+                    return null;
+                  },
+                  onSaved: (value) => _titre = value!,
+                ),
+                const SizedBox(height: 20),
+                TextFormField(
+                  initialValue: _description,
+                  decoration: InputDecoration(
+                    labelText: 'Description',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                    ),
+                  ),
+                  maxLines: 3,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Entrez une description';
+                    }
+                    return null;
+                  },
+                  onSaved: (value) => _description = value!,
+                ),
+                const SizedBox(height: 20),
+                TextFormField(
+                  initialValue: _type,
+                  decoration: InputDecoration(
+                    labelText: 'Type',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Entrez un type';
+                    }
+                    return null;
+                  },
+                  onSaved: (value) => _type = value!,
+                ),
+                const SizedBox(height: 20),
+                TextFormField(
+                  initialValue: _prix.toString(),
+                  decoration: InputDecoration(
+                    labelText: 'Prix',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Entrez un prix';
+                    }
+                    return null;
+                  },
+                  onSaved: (value) => _prix = double.parse(value!),
+                ),
+                const SizedBox(height: 20),
+                TextFormField(
+                  initialValue: _surface.toString(),
+                  decoration: InputDecoration(
+                    labelText: 'Surface',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Entrez une surface';
+                    }
+                    return null;
+                  },
+                  onSaved: (value) => _surface = double.parse(value!),
+                ),
+                const SizedBox(height: 20),
+                TextFormField(
+                  initialValue: _nombrePieces.toString(),
+                  decoration: InputDecoration(
+                    labelText: 'Nombre de pièces',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Entrez un nombre de pièces';
+                    }
+                    return null;
+                  },
+                  onSaved: (value) => _nombrePieces = int.parse(value!),
+                ),
+                const SizedBox(height: 20),
+                TextFormField(
+                  initialValue: _nombreSallesDeBain.toString(),
+                  decoration: InputDecoration(
+                    labelText: 'Nombre de salles de bain',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Entrez un nombre de salles de bain';
+                    }
+                    return null;
+                  },
+                  onSaved: (value) => _nombreSallesDeBain = int.parse(value!),
+                ),
+                const SizedBox(height: 20),
+                TextFormField(
+                  initialValue: _adresse,
+                  decoration: InputDecoration(
+                    labelText: 'Adresse',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Entrez une adresse';
+                    }
+                    return null;
+                  },
+                  onSaved: (value) => _adresse = value!,
+                ),
+                const SizedBox(height: 20),
+                TextFormField(
+                  initialValue: _ville,
+                  decoration: InputDecoration(
+                    labelText: 'Ville',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Entrez une ville';
+                    }
+                    return null;
+                  },
+                  onSaved: (value) => _ville = value!,
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: () async {
+                    final pickedFile = await FilePicker.platform.pickFiles(
+                      type: FileType.image,
+                    );
 
-              // Affichage de l'image de couverture sélectionnée ou existante
-              _coverImage != null
-                  ? CircleAvatar(
+                    if (pickedFile != null) {
+                      setState(() {
+                        _coverUrl = pickedFile.files.first.path!;
+                      });
+                    }
+                  },
+                  child: Text('Télécharger l\'image de couverture'),
+                ),
+                CircleAvatar(
+                  radius: 50,
+                  backgroundImage:
+                      _coverUrl.isNotEmpty ? FileImage(File(_coverUrl)) : null,
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: () async {
+                    final pickedFiles = await FilePicker.platform.pickFiles(
+                      type: FileType.image,
+                      allowMultiple: true,
+                    );
+
+                    if (pickedFiles != null) {
+                      setState(() {
+                        _images = pickedFiles.paths
+                            .map((path) => File(path!))
+                            .cast<String>()
+                            .toList();
+                      });
+                    }
+                  },
+                  child: Text('Télécharger les images'),
+                ),
+                Wrap(
+                  children: _images.map((image) {
+                    return CircleAvatar(
                       radius: 50,
-                      backgroundImage: FileImage(_coverImage!),
-                    )
-                  : widget.property?.cover_url != null
-                      ? CircleAvatar(
-                          radius: 50,
-                          backgroundImage:
-                              NetworkImage(widget.property!.cover_url),
-                        )
-                      : Text('Aucune image sélectionnée'),
-
-              const SizedBox(height: 20),
-
-              // Bouton pour ajouter une image supplémentaire
-              ElevatedButton(
-                onPressed: _addImage,
-                child: Text('Ajouter une image'),
-              ),
-              const SizedBox(height: 20),
-
-              // Affichage des images supplémentaires
-              _images.isNotEmpty
-                  ? ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: _images.length,
-                      itemBuilder: (context, index) {
-                        return CircleAvatar(
-                          radius: 50,
-                          backgroundImage: FileImage(_images[index]!),
-                        );
+                      backgroundImage: FileImage(File(image)),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 20),
+                TextFormField(
+                  decoration: InputDecoration(
+                    labelText: 'Tags',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                    ),
+                    filled: true,
+                  ),
+                  onSaved: (value) {
+                    if (value != null && value.isNotEmpty) {
+                      _tags.add(value);
+                    }
+                  },
+                ),
+                const SizedBox(height: 20),
+                Wrap(
+                  children: _tags.map((tag) {
+                    return Chip(
+                      label: Text(tag),
+                      onDeleted: () {
+                        setState(() {
+                          _tags.remove(tag);
+                        });
                       },
-                    )
-                  : widget.property?.images.isNotEmpty == true
-                      ? ListView.builder(
-                          shrinkWrap: true,
-                          itemCount: widget.property!.images.length,
-                          itemBuilder: (context, index) {
-                            return CircleAvatar(
-                              radius: 50,
-                              backgroundImage:
-                                  NetworkImage(widget.property!.images[index]),
-                            );
-                          },
-                        )
-                      : Text('Aucune image ajoutée'),
-
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _saveProperty,
-                child: const Text('Enregistrer'),
-              ),
-            ],
+                    );
+                  }).toList(),
+                ),
+                DropdownButtonFormField(
+                  decoration: InputDecoration(
+                    labelText: 'Statut',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                    ),
+                    filled: true,
+                  ),
+                  items: [
+                    DropdownMenuItem(
+                      child: Text('En vente'),
+                      value: 'En vente',
+                    ),
+                    DropdownMenuItem(
+                      child: Text('En location'),
+                      value: 'En location',
+                    ),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      _statut = value as String;
+                    });
+                  },
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Veuillez sélectionner un statut';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 20),
+                SwitchListTile(
+                  title: Text('Is Featured'),
+                  value: _isFeatured,
+                  onChanged: (value) => setState(() => _isFeatured = value),
+                ),
+                const SizedBox(height: 20),
+                SwitchListTile(
+                  title: Text('Disponible'),
+                  value: _disponible,
+                  onChanged: (value) => setState(() => _disponible = value),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: _submitForm,
+                  child: Text(widget.property != null
+                      ? 'Modifier propriété'
+                      : 'Créer propriété'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: widget.settingsController.primaryColor,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
+  }
+
+  void _submitForm() async {
+    if (_formKey.currentState!.validate()) {
+      _formKey.currentState!.save();
+      if (widget.property != null) {
+        await _propertyService.updateProperty(Property(
+          propertyId: widget.property!.propertyId,
+          titre: _titre,
+          description: _description,
+          type: _type,
+          prix: _prix,
+          surface: _surface,
+          nombrePieces: _nombrePieces,
+          nombreSallesDeBain: _nombreSallesDeBain,
+          adresse: _adresse,
+          ville: _ville,
+          disponible: _disponible,
+          dateAjout: _dateAjout,
+          agentId: _agentId,
+          images: _images,
+          favorites: _favorites,
+          cover_url: _coverUrl,
+          isFeatured: _isFeatured,
+          statut: _statut,
+          tags: _tags,
+        ));
+      } else {
+        await _propertyService.createProperty(
+          Property(
+            titre: _titre,
+            description: _description,
+            type: _type,
+            prix: _prix,
+            surface: _surface,
+            nombrePieces: _nombrePieces,
+            nombreSallesDeBain: _nombreSallesDeBain,
+            adresse: _adresse,
+            ville: _ville,
+            disponible: _disponible,
+            dateAjout: _dateAjout,
+            agentId: _agentId,
+            images: _images,
+            favorites: _favorites,
+            cover_url: _coverUrl,
+            isFeatured: _isFeatured,
+            statut: _statut,
+            tags: _tags,
+          ),
+          null,
+          [],
+        );
+      }
+      Navigator.pop(context);
+    }
   }
 }

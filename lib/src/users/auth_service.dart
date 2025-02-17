@@ -1,3 +1,4 @@
+import 'package:appimmo/src/users/users_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -8,9 +9,18 @@ class AuthService {
   final DatabaseReference _db = FirebaseDatabase.instance.ref().child('users');
   final GoogleSignIn _googleSignIn = GoogleSignIn();
 
+  Future<void> createUser(UserModel.User user) async {
+    try {
+      await UserService().createUser(user);
+    } catch (e) {
+      print(e.toString());
+    }
+  }
+
   Future<User?> registerWithEmailAndPassword(
       String email,
       String password,
+      String avatar,
       String nom,
       String prenom,
       String role,
@@ -31,7 +41,7 @@ class AuthService {
           role: role,
           telephone: telephone,
           adresse: adresse,
-          dateInscription: DateTime.now(),
+          dateInscription: DateTime.now(), avatar: avatar,
         );
         await _db.child(user.uid).set(newUser.toMap());
       }
@@ -71,18 +81,18 @@ class AuthService {
       // Save additional user data in the Realtime Database if needed
       if (user != null) {
         UserModel.User newUser = UserModel.User(
-          userId: user.uid,
-          nom: user.displayName?.split(' ')[0] ??
-              'Sans nom', // Use first name from Google
-          prenom: user.displayName?.split(' ')[1] ??
-              'Sans prénom', // Use last name from Google
-          email: user.email!,
-          motDePasse: '', // You might want to handle this differently
-          role: 'user', // Default role
-          telephone: '', // You might want to handle this differently
-          adresse: '', // You might want to handle this differently
-          dateInscription: DateTime.now(),
-        );
+            userId: user.uid,
+            nom: user.displayName?.split(' ')[0] ??
+                'Sans nom', // Use first name from Google
+            prenom: user.displayName?.split(' ')[1] ??
+                'Sans prénom', // Use last name from Google
+            email: user.email!,
+            motDePasse: '', // You might want to handle this differently
+            role: 'user', // Default role
+            telephone: '', // You might want to handle this differently
+            adresse: '', // You might want to handle this differently
+            dateInscription: DateTime.now(),
+            avatar: '');
         await _db.child(user.uid).set(newUser.toMap());
       }
       return user;

@@ -1,6 +1,5 @@
 import 'package:appimmo/src/admin/properties_screen.dart';
 import 'package:appimmo/src/admin/users_screen.dart';
-import 'package:appimmo/src/admin/visits_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_ui_auth/firebase_ui_auth.dart';
 import 'package:flutter/material.dart';
@@ -146,8 +145,9 @@ class _AdminBasePageState extends State<AdminBasePage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) =>
-                        UsersListScreen(), // Remplacez par votre écran d'utilisateurs
+                    builder: (context) => UserListPage(
+                      settingsController: widget.settingsController,
+                    ), // Remplacez par votre écran d'utilisateurs
                   ),
                 );
               },
@@ -169,127 +169,14 @@ class _AdminBasePageState extends State<AdminBasePage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) =>
-                        PropertiesListScreen(), // Remplacez par votre écran de biens immobiliers
+                    builder: (context) => PropertyListPage(
+                      settingsController: widget.settingsController,
+                    ), // Remplacez par votre écran de biens immobiliers
                   ),
                 );
               },
             ),
-            // Visites
-            ListTile(
-              leading: Icon(
-                Icons.calendar_today,
-                color: widget.settingsController.primaryColor,
-              ),
-              title: Text(
-                'Visites',
-                style: TextStyle(
-                  color: widget.settingsController.primaryColor,
-                ),
-              ),
-              onTap: () {
-                Navigator.of(context).pop();
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        VisitsListScreen(), // Remplacez par votre écran de visites
-                  ),
-                );
-              },
-            ),
-            // Contrats
-            ListTile(
-              leading: Icon(
-                Icons.assignment,
-                color: widget.settingsController.primaryColor,
-              ),
-              title: Text(
-                'Contrats',
-                style: TextStyle(
-                  color: widget.settingsController.primaryColor,
-                ),
-              ),
-              onTap: () {
-                Navigator.of(context).pop();
-                /* Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        ContractsListScreen(), // Remplacez par votre écran de contrats
-                  ),
-                ); */
-              },
-            ),
-            // Favoris
-            ListTile(
-              leading: Icon(
-                Icons.favorite,
-                color: widget.settingsController.primaryColor,
-              ),
-              title: Text(
-                'Favoris',
-                style: TextStyle(
-                  color: widget.settingsController.primaryColor,
-                ),
-              ),
-              onTap: () {
-                Navigator.of(context).pop();
-               /*  Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        FavoritesListScreen(), // Remplacez par votre écran de favoris
-                  ),
-                ); */
-              },
-            ),
-            // Messages
-            ListTile(
-              leading: Icon(
-                Icons.message,
-                color: widget.settingsController.primaryColor,
-              ),
-              title: Text(
-                'Messages',
-                style: TextStyle(
-                  color: widget.settingsController.primaryColor,
-                ),
-              ),
-              onTap: () {
-                Navigator.of(context).pop();
-               /*  Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        MessagesListScreen(), // Remplacez par votre écran de messages
-                  ),
-                ); */
-              },
-            ),
-            // Transactions
-            ListTile(
-              leading: Icon(
-                Icons.attach_money,
-                color: widget.settingsController.primaryColor,
-              ),
-              title: Text(
-                'Transactions',
-                style: TextStyle(
-                  color: widget.settingsController.primaryColor,
-                ),
-              ),
-              onTap: () {
-                Navigator.of(context).pop();
-               /*  Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        TransactionsListScreen(), // Remplacez par votre écran de transactions
-                  ),
-                ); */
-              },
-            ),
+
             // Avis
             ListTile(
               leading: Icon(
@@ -304,34 +191,11 @@ class _AdminBasePageState extends State<AdminBasePage> {
               ),
               onTap: () {
                 Navigator.of(context).pop();
-               /*  Navigator.push(
+                /*  Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) =>
                         ReviewsListScreen(), // Remplacez par votre écran d'avis
-                  ),
-                ); */
-              },
-            ),
-            // Notifications
-            ListTile(
-              leading: Icon(
-                Icons.notifications,
-                color: widget.settingsController.primaryColor,
-              ),
-              title: Text(
-                'Notifications',
-                style: TextStyle(
-                  color: widget.settingsController.primaryColor,
-                ),
-              ),
-              onTap: () {
-                Navigator.of(context).pop();
-               /*  Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        NotificationsListScreen(), // Remplacez par votre écran de notifications
                   ),
                 ); */
               },

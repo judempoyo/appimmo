@@ -7,20 +7,21 @@ class UserService {
   // Créer un utilisateur
   Future<void> createUser(User user) async {
     try {
-      final userRef = _usersRef.push();
-      user.userId = userRef.key;
-      await userRef.set(user.toMap());
+      await _usersRef.child(user.userId!).set(user.toMap());
     } catch (e) {
       throw Exception("Erreur lors de la création de l'utilisateur : $e");
     }
   }
 
   // Récupérer un utilisateur par ID
+
   Future<User?> getUserById(String userId) async {
     try {
       final snapshot = await _usersRef.child(userId).get();
       if (snapshot.exists) {
-        return User.fromMap(snapshot.value as Map<String, dynamic>, userId);
+        final userData =
+            Map<String, dynamic>.from(snapshot.value as Map<Object?, Object?>);
+        return User.fromMap(userData, userId);
       }
       return null;
     } catch (e) {
@@ -34,9 +35,25 @@ class UserService {
       final snapshot = await _usersRef.get();
       if (snapshot.exists) {
         final users = <User>[];
-        final data = snapshot.value as Map<dynamic, dynamic>;
+        final data = snapshot.value as Map<Object?, Object?>;
         data.forEach((key, value) {
-          users.add(User.fromMap(value as Map<String, dynamic>, key));
+          if (key != null) {
+            final userData =
+                Map<String, dynamic>.from(value as Map<Object?, Object?>);
+            users.add(User(
+              userId: key as String,
+              nom: userData['nom'] ?? '',
+              prenom: userData['prenom'] ?? '',
+              email: userData['email'] ?? '',
+              motDePasse: userData['mot_de_passe'] ?? '',
+              avatar: userData['avatar'] ?? '',
+              role: userData['role'] ?? '',
+              telephone: userData['telephone'] ?? '',
+              adresse: userData['adresse'] ?? '',
+              dateInscription:
+                  DateTime.parse(userData['date_inscription'] ?? ''),
+            ));
+          }
         });
         return users;
       }
@@ -49,21 +66,16 @@ class UserService {
   // Asynchronous method to fetch all agents
   Future<List<User>> getAllAgents() async {
     try {
-      // Fetch data from Firebase asynchronously
       final DataSnapshot dataSnapshot = await _usersRef.get();
 
       if (dataSnapshot.exists) {
         final data = dataSnapshot.value as Map<dynamic, dynamic>;
         final agents = <User>[];
 
-        // Convert Firebase data to User objects
         data.forEach((key, value) {
           if (value is Map<Object?, Object?>) {
-            // Safely cast the value to Map<String, dynamic>
-            final userData =
-                Map<String, dynamic>.from(value as Map<Object?, Object?>);
-            if (userData['role'] == 'agent') {
-              // Filter for agents only
+            final userData = Map<String, dynamic>.from(value);
+            if (userData['role'] == 'agent' && key != null) {
               agents.add(User.fromMap(userData, key as String));
             }
           }
@@ -74,7 +86,6 @@ class UserService {
         return []; // Return an empty list if no data is found
       }
     } catch (e) {
-      // Handle errors (e.g., log the error or return an empty list)
       print('Erreur lors de la récupération des agents: $e');
       return [];
     }

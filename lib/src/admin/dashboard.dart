@@ -1,3 +1,5 @@
+import 'package:appimmo/src/admin/properties_screen.dart';
+import 'package:appimmo/src/admin/users_screen.dart';
 import 'package:appimmo/src/settings/settings_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -17,13 +19,7 @@ class _AdminPanelState extends State<AdminPanel> {
   final Map<String, int> _counts = {
     'users': 0,
     'properties': 0,
-    'visits': 0,
-    'contracts': 0,
-    'favorites': 0,
-    'messages': 0,
-    'transactions': 0,
     'reviews': 0,
-    'notifications': 0,
   };
   bool _isLoading = false;
 
@@ -122,20 +118,9 @@ class _AdminPanelState extends State<AdminPanel> {
         return Icons.people;
       case 'Biens Immobiliers':
         return Icons.home;
-      case 'Visites':
-        return Icons.calendar_today;
-      case 'Contrats':
-        return Icons.assignment;
-      case 'Favoris':
-        return Icons.favorite;
-      case 'Messages':
-        return Icons.message;
-      case 'Transactions':
-        return Icons.attach_money;
       case 'Avis':
         return Icons.star;
-      case 'Notifications':
-        return Icons.notifications;
+
       default:
         return Icons.question_mark;
     }
@@ -148,7 +133,7 @@ class _AdminPanelState extends State<AdminPanel> {
     // Déterminer le nombre de colonnes en fonction de la largeur de l'écran
     int crossAxisCount;
     if (screenWidth < 600) {
-      crossAxisCount = 2; // Petits écrans
+      crossAxisCount = 1; // Petits écrans
     } else if (screenWidth < 1200) {
       crossAxisCount = 3; // Écrans moyens
     } else {
@@ -174,60 +159,27 @@ class _AdminPanelState extends State<AdminPanel> {
                 mainAxisSpacing: 10,
                 crossAxisSpacing: 10,
                 childAspectRatio:
-                    1.5, // Ajuster le ratio pour une meilleure présentation
+                    3, // Ajuster le ratio pour une meilleure présentation
                 children: [
                   _buildCountCard(
                     'Utilisateurs',
                     _counts['users']!,
-                    Text('Users Page'),
+                    UserListPage(
+                      settingsController: widget.settingsController,
+                    ),
                     widget.settingsController.primaryColor,
                   ),
                   _buildCountCard(
                     'Biens Immobiliers',
                     _counts['properties']!,
-                    Text('Properties Page'),
-                    widget.settingsController.primaryColor,
-                  ),
-                  _buildCountCard(
-                    'Visites',
-                    _counts['visits']!,
-                    Text('Visits Page'),
-                    widget.settingsController.primaryColor,
-                  ),
-                  _buildCountCard(
-                    'Contrats',
-                    _counts['contracts']!,
-                    Text('Contracts Page'),
-                    widget.settingsController.primaryColor,
-                  ),
-                  _buildCountCard(
-                    'Favoris',
-                    _counts['favorites']!,
-                    Text('Favorites Page'),
-                    widget.settingsController.primaryColor,
-                  ),
-                  _buildCountCard(
-                    'Messages',
-                    _counts['messages']!,
-                    Text('Messages Page'),
-                    widget.settingsController.primaryColor,
-                  ),
-                  _buildCountCard(
-                    'Transactions',
-                    _counts['transactions']!,
-                    Text('Transactions Page'),
+                    PropertyListPage(
+                        settingsController: widget.settingsController),
                     widget.settingsController.primaryColor,
                   ),
                   _buildCountCard(
                     'Avis',
                     _counts['reviews']!,
                     Text('Reviews Page'),
-                    widget.settingsController.primaryColor,
-                  ),
-                  _buildCountCard(
-                    'Notifications',
-                    _counts['notifications']!,
-                    Text('Notifications Page'),
                     widget.settingsController.primaryColor,
                   ),
                 ],

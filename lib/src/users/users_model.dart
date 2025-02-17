@@ -3,7 +3,8 @@ class User {
   String nom;
   String prenom;
   String email;
-  String motDePasse; // À hasher avant de stocker
+  String motDePasse;
+  String avatar;
   String role;
   String telephone;
   String adresse;
@@ -15,6 +16,7 @@ class User {
     required this.prenom,
     required this.email,
     required this.motDePasse,
+    required this.avatar,
     required this.role,
     required this.telephone,
     required this.adresse,
@@ -28,6 +30,7 @@ class User {
       'prenom': prenom,
       'email': email,
       'mot_de_passe': motDePasse,
+      'avatar': avatar,
       'role': role,
       'telephone': telephone,
       'adresse': adresse,
@@ -43,6 +46,7 @@ class User {
       prenom: map['prenom'] ?? '',
       email: map['email'] ?? '',
       motDePasse: map['mot_de_passe'],
+      avatar: map['avatar'],
       role: map['role'],
       telephone: map['telephone'] ?? '',
       adresse: map['adresse'] ?? '',

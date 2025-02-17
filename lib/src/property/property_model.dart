@@ -8,10 +8,9 @@ class Property {
   double prix;
   double surface;
   int nombrePieces;
+  int nombreSallesDeBain; // Nouveau champ ajouté
   String adresse;
   String ville;
-  String codePostal;
-  String pays;
   bool disponible;
   DateTime dateAjout;
   String agentId;
@@ -21,29 +20,32 @@ class Property {
   List<String> favorites;
   String cover_url;
   bool isFeatured = false;
+  String statut;
+  List<String> tags; // Nouveau champ pour les tags
 
-  Property(
-      {this.propertyId,
-      required this.titre,
-      required this.description,
-      required this.type,
-      required this.prix,
-      required this.surface,
-      required this.nombrePieces,
-      required this.adresse,
-      required this.ville,
-      required this.codePostal,
-      required this.pays,
-      required this.disponible,
-      DateTime? dateAjout,
-      required this.agentId,
-      this.likes = const [],
-      this.comments = const [],
-      this.images = const [],
-      this.favorites = const [],
-      required this.cover_url,
-      this.isFeatured = false})
-      : dateAjout = dateAjout ?? DateTime.now();
+  Property({
+    this.propertyId,
+    required this.titre,
+    required this.description,
+    required this.type,
+    required this.prix,
+    required this.surface,
+    required this.nombrePieces,
+    required this.nombreSallesDeBain, // Initialisation du nouveau champ
+    required this.adresse,
+    required this.ville,
+    required this.disponible,
+    DateTime? dateAjout,
+    required this.agentId,
+    this.likes = const [],
+    this.comments = const [],
+    this.images = const [],
+    this.favorites = const [],
+    required this.cover_url,
+    this.isFeatured = false,
+    required this.statut,
+    this.tags = const [], // Initialisation du nouveau champ
+  }) : dateAjout = dateAjout ?? DateTime.now();
 
   // Convertir un objet Property en Map pour Firebase
   Map<String, dynamic> toMap() {
@@ -54,10 +56,9 @@ class Property {
       'prix': prix,
       'surface': surface,
       'nombre_pieces': nombrePieces,
+      'nombre_salles_de_bain': nombreSallesDeBain, // Ajout du nouveau champ
       'adresse': adresse,
       'ville': ville,
-      'code_postal': codePostal,
-      'pays': pays,
       'disponible': disponible,
       'date_ajout': dateAjout.toIso8601String(),
       'agent_id': agentId,
@@ -67,6 +68,8 @@ class Property {
       'favorites': favorites,
       'cover_url': cover_url,
       'isFeatured': isFeatured,
+      'statut': statut,
+      'tags': tags, // Ajout du nouveau champ
     };
   }
 
@@ -80,10 +83,10 @@ class Property {
       prix: map['prix'].toDouble(),
       surface: map['surface'].toDouble(),
       nombrePieces: map['nombre_pieces'],
+      nombreSallesDeBain:
+          map['nombre_salles_de_bain'] ?? 0, // Valeur par défaut
       adresse: map['adresse'],
       ville: map['ville'],
-      codePostal: map['code_postal'],
-      pays: map['pays'],
       disponible: map['disponible'],
       dateAjout: DateTime.parse(map['date_ajout']),
       agentId: map['agent_id'],
@@ -103,6 +106,8 @@ class Property {
       favorites: List<String>.from(map['favorites'] ?? []),
       cover_url: map['cover_url'] ?? '',
       isFeatured: map['isFeatured'] ?? false,
+      statut: map['statut'] ?? 'À vendre',
+      tags: List<String>.from(map['tags'] ?? []), // Ajout du nouveau champ
     );
   }
 }

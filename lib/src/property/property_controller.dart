@@ -110,4 +110,10 @@ class PropertyController {
   Future<String> uploadImage(File imageFile) async {
     return await _propertyService.uploadImage(imageFile);
   }
+
+  Future<List<Property>> getSimilarProperties(Property currentProperty,
+      {int limit = 5}) async {
+    return await _propertyService.getSimilarProperties(currentProperty,
+        limit: limit);
+  }
 }

@@ -1,8 +1,8 @@
-import 'dart:async';
-
+import 'package:appimmo/src/home/contact_page.dart';
 import 'package:appimmo/src/home/searrch..dart';
+import 'package:appimmo/src/property/favorite_property_card.dart';
+import 'package:appimmo/src/property/property_card.dart';
 import 'package:appimmo/src/property/property_controller.dart';
-import 'package:appimmo/src/property/property_detail_screen.dart';
 import 'package:appimmo/src/users/users_controller.dart';
 import 'package:appimmo/src/users/users_model.dart';
 import 'package:flutter/material.dart';
@@ -35,33 +35,29 @@ abstract class BasePageState<T extends BasePage> extends State<T>
 
   String _selectedPropertyType = 'Tous';
 
-  List<Property> _properties = []; //
+  List<Property> _properties = [];
 
   @override
   void initState() {
     super.initState();
     _propertyController.getAllPropertiesStream();
     _tabController = TabController(length: 5, vsync: this);
-    _tabController
-        .addListener(_handleTabChange); // Écouter les changements d'onglet
+    _tabController.addListener(_handleTabChange);
   }
 
   @override
   void dispose() {
-    _tabController.removeListener(_handleTabChange); // Supprimer l'écouteur
+    _tabController.removeListener(_handleTabChange);
     _tabController.dispose();
     super.dispose();
     _properties = [];
   }
 
-  // Gérer les changements d'onglet
   void _handleTabChange() {
     if (_tabController.index == 1) {
-      // Si l'onglet "proprietes" est actif, redémarrer le stream
       setState(() {});
-    } else {
-      // Sinon, annuler le stream
     }
+    setState(() {});
   }
 
   void _onMenuAction(String value) async {
@@ -70,7 +66,10 @@ abstract class BasePageState<T extends BasePage> extends State<T>
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ProfilePage(userId: ''),
+            builder: (context) => ProfilePage(
+              userId: userId,
+              settingsController: widget.settingsController,
+            ),
           ),
         );
         break;
@@ -90,124 +89,6 @@ abstract class BasePageState<T extends BasePage> extends State<T>
       default:
         break;
     }
-  }
-
-  Widget _buildPropertyCard(Property property) {
-    return Card(
-      elevation: 4,
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Image.network(
-            property.cover_url,
-            height: 150,
-            width: double.infinity,
-            fit: BoxFit.cover,
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  property.titre,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${property.prix} €',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    color: Colors.green,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  property.adresse,
-                  style: const TextStyle(fontSize: 14),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    ElevatedButton(
-                      onPressed: () {
-                        // Navigate to property details page
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => PropertyDetailsPage(
-                              property: property,
-                              settingsController: widget.settingsController,
-                            ),
-                          ),
-                        );
-                      },
-                      child: Text('Voir la maison'),
-                      style: ElevatedButton.styleFrom(
-                        padding:
-                            EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                    Row(children: [
-                      IconButton(
-                        onPressed: () async {
-                          if (property.likes.contains(userId)) {
-                            await _propertyController.unlikeProperty(
-                                property.propertyId!, userId);
-                          } else {
-                            await _propertyController.likeProperty(
-                                property.propertyId!, userId);
-                          }
-                          setState(() {}); // Refresh the page
-                        },
-                        icon: Icon(
-                          property.likes.contains(userId)
-                              ? Icons.favorite
-                              : Icons.favorite_border,
-                          color: property.likes.contains(userId)
-                              ? Colors.red
-                              : Colors.grey,
-                        ),
-                      ),
-                      Text('${property.likes.length}'),
-                      IconButton(
-                        onPressed: () async {
-                          if (property.favorites.contains(userId)) {
-                            await _propertyController.removeFavorite(
-                                userId, property.propertyId!);
-                          } else {
-                            await _propertyController.addFavorite(
-                                userId, property.propertyId!);
-                          }
-                          setState(() {}); // Refresh the page
-                        },
-                        icon: Icon(
-                          property.favorites.contains(userId)
-                              ? Icons.star_outlined
-                              : Icons.star_outline,
-                          color: property.favorites.contains(userId)
-                              ? Colors.yellow
-                              : Colors.grey,
-                        ),
-                      ),
-                      //Text('${property.favorites.length}'),
-                    ]),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildPropertyList() {
@@ -241,7 +122,29 @@ abstract class BasePageState<T extends BasePage> extends State<T>
           return ListView.builder(
             itemCount: properties.length,
             itemBuilder: (context, index) {
-              return _buildPropertyCard(properties[index]);
+              return PropertyCard(
+                property: properties[index],
+                userId: userId,
+                onLike: (propertyId) async {
+                  if (properties[index].likes.contains(userId)) {
+                    await _propertyController.unlikeProperty(
+                        propertyId, userId);
+                  } else {
+                    await _propertyController.likeProperty(propertyId, userId);
+                  }
+                  //setState(() {});
+                },
+                onFavorite: (propertyId) async {
+                  if (properties[index].favorites.contains(userId)) {
+                    await _propertyController.removeFavorite(
+                        userId, propertyId);
+                  } else {
+                    await _propertyController.addFavorite(userId, propertyId);
+                  }
+                  //setState(() {});
+                },
+                settingsController: widget.settingsController,
+              );
             },
           );
         }
@@ -274,7 +177,7 @@ abstract class BasePageState<T extends BasePage> extends State<T>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        agent.nom ?? 'Nom non disponible',
+                        agent.nom,
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -282,12 +185,12 @@ abstract class BasePageState<T extends BasePage> extends State<T>
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        agent.email ?? 'Email non disponible',
+                        agent.email,
                         style: const TextStyle(fontSize: 14),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        agent.telephone ?? 'Téléphone non disponible',
+                        agent.telephone,
                         style: const TextStyle(fontSize: 14),
                       ),
                       const SizedBox(height: 16),
@@ -333,83 +236,6 @@ abstract class BasePageState<T extends BasePage> extends State<T>
     );
   }
 
-  Widget _buildFavoriteCard(Property property) {
-    return Card(
-      elevation: 4,
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Image.network(
-            property.cover_url,
-            height: 100,
-            width: double.infinity,
-            fit: BoxFit.cover,
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  property.titre,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${property.prix} €',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.green,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    ElevatedButton(
-                      onPressed: () {
-                        // Navigate to property details page
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => PropertyDetailsPage(
-                              property: property,
-                              settingsController: widget.settingsController,
-                            ),
-                          ),
-                        );
-                      },
-                      child: Text('Voir la maison'),
-                      style: ElevatedButton.styleFrom(
-                        padding:
-                            EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () async {
-                        await _propertyController.removeFavorite(
-                            userId, property.propertyId!);
-                        setState(() {}); // Refresh the page
-                      },
-                      icon: Icon(Icons.delete, color: Colors.red),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -437,7 +263,8 @@ abstract class BasePageState<T extends BasePage> extends State<T>
                   value: 'profil',
                   child: Row(
                     children: [
-                      Icon(Icons.person, color: Colors.black),
+                      Icon(Icons.person,
+                          color: widget.settingsController.primaryColor),
                       SizedBox(width: 8),
                       Text('Profil'),
                     ],
@@ -447,7 +274,8 @@ abstract class BasePageState<T extends BasePage> extends State<T>
                   value: 'parametres',
                   child: Row(
                     children: [
-                      Icon(Icons.settings, color: Colors.black),
+                      Icon(Icons.settings,
+                          color: widget.settingsController.primaryColor),
                       SizedBox(width: 8),
                       Text('Paramètres'),
                     ],
@@ -457,7 +285,8 @@ abstract class BasePageState<T extends BasePage> extends State<T>
                   value: 'notifications',
                   child: Row(
                     children: [
-                      Icon(Icons.notifications, color: Colors.black),
+                      Icon(Icons.notifications,
+                          color: widget.settingsController.primaryColor),
                       SizedBox(width: 8),
                       Text('Notifications'),
                     ],
@@ -467,7 +296,8 @@ abstract class BasePageState<T extends BasePage> extends State<T>
                   value: 'a_propos',
                   child: Row(
                     children: [
-                      Icon(Icons.info, color: Colors.black),
+                      Icon(Icons.info,
+                          color: widget.settingsController.primaryColor),
                       SizedBox(width: 8),
                       Text('À propos'),
                     ],
@@ -477,7 +307,8 @@ abstract class BasePageState<T extends BasePage> extends State<T>
                   value: 'deconnexion',
                   child: Row(
                     children: [
-                      Icon(Icons.logout, color: Colors.black),
+                      Icon(Icons.logout,
+                          color: widget.settingsController.primaryColor),
                       SizedBox(width: 8),
                       Text('Déconnexion'),
                     ],
@@ -489,12 +320,30 @@ abstract class BasePageState<T extends BasePage> extends State<T>
         ],
         bottom: TabBar(
           controller: _tabController,
+          isScrollable: true,
+          labelStyle: TextStyle(fontSize: 12),
+          indicatorSize: TabBarIndicatorSize.tab,
           tabs: [
-            Tab(icon: Icon(Icons.home), text: 'Accueil'),
-            Tab(icon: Icon(Icons.list), text: 'Propriétés'),
-            Tab(icon: Icon(Icons.people), text: 'Agents'),
-            Tab(icon: Icon(Icons.favorite), text: 'Favoris'),
-            Tab(icon: Icon(Icons.contact_mail), text: 'Contact')
+            Tab(
+              icon: Icon(Icons.home),
+              text: _tabController.index == 0 ? 'Accueil' : null,
+            ),
+            Tab(
+              icon: Icon(Icons.list),
+              text: _tabController.index == 1 ? 'Propriétés' : null,
+            ),
+            Tab(
+              icon: Icon(Icons.people),
+              text: _tabController.index == 2 ? 'Agents' : null,
+            ),
+            Tab(
+              icon: Icon(Icons.favorite),
+              text: _tabController.index == 3 ? 'Favoris' : null,
+            ),
+            Tab(
+              icon: Icon(Icons.contact_mail),
+              text: _tabController.index == 4 ? 'Contact' : null,
+            ),
           ],
         ),
       ),
@@ -534,7 +383,33 @@ abstract class BasePageState<T extends BasePage> extends State<T>
                       return ListView.builder(
                         itemCount: properties.length,
                         itemBuilder: (context, index) {
-                          return _buildPropertyCard(properties[index]);
+                          return PropertyCard(
+                            property: properties[index],
+                            userId: userId,
+                            onLike: (propertyId) async {
+                              if (properties[index].likes.contains(userId)) {
+                                await _propertyController.unlikeProperty(
+                                    propertyId, userId);
+                              } else {
+                                await _propertyController.likeProperty(
+                                    propertyId, userId);
+                              }
+                              //setState(() {});
+                            },
+                            onFavorite: (propertyId) async {
+                              if (properties[index]
+                                  .favorites
+                                  .contains(userId)) {
+                                await _propertyController.removeFavorite(
+                                    userId, propertyId);
+                              } else {
+                                await _propertyController.addFavorite(
+                                    userId, propertyId);
+                              }
+                              //setState(() {});
+                            },
+                            settingsController: widget.settingsController,
+                          );
                         },
                       );
                     }
@@ -550,7 +425,7 @@ abstract class BasePageState<T extends BasePage> extends State<T>
               Expanded(child: _buildPropertyList()),
             ],
           ),
-//page des agents
+          // Page des agents
           _buildAgentList(),
           // Page des favoris
           Column(
@@ -585,7 +460,10 @@ abstract class BasePageState<T extends BasePage> extends State<T>
                       return ListView.builder(
                         itemCount: properties.length,
                         itemBuilder: (context, index) {
-                          return _buildFavoriteCard(properties[index]);
+                          return FavoriteCard(
+                            property: properties[index],
+                            settingsController: widget.settingsController,
+                          );
                         },
                       );
                     }
@@ -595,104 +473,7 @@ abstract class BasePageState<T extends BasePage> extends State<T>
             ],
           ),
           // Page de contact
-          // Page de contact
-          Column(
-            children: [
-              Text('Contact'),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      // Informations de l'agence
-                      Card(
-                        elevation: 4,
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            children: [
-                              Text(
-                                'Agence Immo',
-                                style: TextStyle(
-                                    fontSize: 18, fontWeight: FontWeight.bold),
-                              ),
-                              SizedBox(height: 8),
-                              Text(
-                                'Adresse : 123 rue de la République, 75001 Paris',
-                                style: TextStyle(fontSize: 14),
-                              ),
-                              SizedBox(height: 4),
-                              Text(
-                                'Téléphone : 01 23 45 67 89',
-                                style: TextStyle(fontSize: 14),
-                              ),
-                              SizedBox(height: 4),
-                              Text(
-                                'Email : contact@agenceimmo.com',
-                                style: TextStyle(fontSize: 14),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 16),
-                      // Formulaire de contact
-                      Card(
-                        elevation: 4,
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            children: [
-                              Text(
-                                'Formulaire de contact',
-                                style: TextStyle(
-                                    fontSize: 18, fontWeight: FontWeight.bold),
-                              ),
-                              SizedBox(height: 8),
-                              TextField(
-                                decoration: InputDecoration(
-                                  labelText: 'Nom',
-                                  border: OutlineInputBorder(),
-                                ),
-                              ),
-                              SizedBox(height: 8),
-                              TextField(
-                                decoration: InputDecoration(
-                                  labelText: 'Email',
-                                  border: OutlineInputBorder(),
-                                ),
-                              ),
-                              SizedBox(height: 8),
-                              TextField(
-                                decoration: InputDecoration(
-                                  labelText: 'Message',
-                                  border: OutlineInputBorder(),
-                                ),
-                              ),
-                              SizedBox(height: 16),
-                              ElevatedButton(
-                                onPressed: () {
-                                  // Envoyer le formulaire de contact
-                                },
-                                child: Text('Envoyer'),
-                                style: ElevatedButton.styleFrom(
-                                  padding: EdgeInsets.symmetric(
-                                      horizontal: 16, vertical: 8),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
+          ContactPage(),
         ],
       ),
     );

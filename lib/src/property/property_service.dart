@@ -54,6 +54,18 @@ class PropertyService {
 
   // Récupérer toutes les propriétés
   Future<List<Property>> getAllProperties() async {
+    DatabaseEvent event = await _propertiesRef.once();
+    if (event.snapshot.value != null) {
+      Map<Object?, Object?> data =
+          event.snapshot.value as Map<Object?, Object?>;
+      return data.entries
+          .map((entry) => Property.fromMap(
+              Map<String, dynamic>.from(entry.value as Map<Object?, Object?>),
+              entry.key as String))
+          .toList();
+    }
+    return [];
+  } /*   Future<List<Property>> getAllProperties() async {
     try {
       final snapshot = await _propertiesRef.get();
       if (snapshot.exists) {
@@ -69,6 +81,7 @@ class PropertyService {
       throw Exception("Erreur lors de la récupération des propriétés : $e");
     }
   }
+ */
 
   // Mettre à jour une propriété
   Future<void> updateProperty(Property property) async {
@@ -399,5 +412,43 @@ class PropertyService {
       return properties;
     }
     return [];
+  }
+
+  Future<List<Property>> getSimilarProperties(Property currentProperty,
+      {int limit = 5}) async {
+    try {
+      // Récupérer toutes les propriétés
+      final allProperties = await getAllProperties();
+
+      // Filtrer les propriétés similaires en fonction des critères
+      final similarProperties = allProperties.where((property) {
+        // Exclure la propriété actuelle
+        if (property.propertyId == currentProperty.propertyId) {
+          return false;
+        }
+
+        // Critères de similarité
+        final isSameType = property.type == currentProperty.type; // Même type
+        final isSameCity =
+            property.ville == currentProperty.ville; // Même ville
+        final isPriceInRange = (property.prix >= currentProperty.prix * 0.8) &&
+            (property.prix <=
+                currentProperty.prix * 1.2); // Prix dans une plage de ±20%
+        final isSurfaceInRange =
+            (property.surface >= currentProperty.surface * 0.8) &&
+                (property.surface <=
+                    currentProperty.surface *
+                        1.2); // Surface dans une plage de ±20%
+
+        // Retourner true si les critères sont remplis
+        return isSameType && isSameCity && isPriceInRange && isSurfaceInRange;
+      }).toList();
+
+      // Limiter le nombre de résultats à 5
+      return similarProperties.take(limit).toList();
+    } catch (e) {
+      throw Exception(
+          "Erreur lors de la récupération des propriétés similaires : $e");
+    }
   }
 }

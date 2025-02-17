@@ -1,109 +1,206 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
-import 'package:flutter/material.dart';
+import 'dart:io';
 
 import 'package:appimmo/src/users/users_model.dart';
+import 'package:appimmo/src/settings/settings_controller.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
 import 'package:appimmo/src/users/users_service.dart';
 
-class UsersListScreen extends StatefulWidget {
-  const UsersListScreen({Key? key}) : super(key: key);
+class UserListPage extends StatefulWidget {
+  final SettingsController settingsController;
+
+  const UserListPage({super.key, required this.settingsController});
 
   @override
-  _UsersListScreenState createState() => _UsersListScreenState();
+  _UserListPageState createState() => _UserListPageState();
 }
 
-class _UsersListScreenState extends State<UsersListScreen> {
+class _UserListPageState extends State<UserListPage> {
   final UserService _userService = UserService();
-  List<User> _users = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadUsers();
-  }
-
-  Future<void> _loadUsers() async {
-    final users = await _userService.getAllUsers();
-    setState(() {
-      _users = users;
-    });
-  }
-
-  void _navigateToUserForm(BuildContext context, {User? user}) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => UserFormScreen(user: user),
-      ),
-    ).then((_) => _loadUsers());
-  }
-
-  void _deleteUser(String userId) async {
-    await _userService.deleteUser(userId);
-    _loadUsers();
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Liste des Utilisateurs'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () => _navigateToUserForm(context),
-          ),
-        ],
+        title: Text('Utilisateurs'),
       ),
-      body: ListView.builder(
-        itemCount: _users.length,
-        itemBuilder: (context, index) {
-          final user = _users[index];
-          return ListTile(
-            title: Text('${user.nom} ${user.prenom}'),
-            subtitle: Text(user.email),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.edit),
-                  onPressed: () => _navigateToUserForm(context, user: user),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete),
-                  onPressed: () => _deleteUser(user.userId!),
-                ),
-              ],
-            ),
+      body: FutureBuilder(
+        future: _userService.getAllUsers(),
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            return ListView.builder(
+              itemCount: snapshot.data!.length,
+              itemBuilder: (context, index) {
+                return Card(
+                  elevation: 5,
+                  margin: EdgeInsets.all(10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(15.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              snapshot.data![index].nom,
+                              style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color:
+                                      widget.settingsController.primaryColor),
+                            ),
+                            PopupMenuButton(
+                              icon: Icon(Icons.more_horiz),
+                              itemBuilder: (context) => [
+                                PopupMenuItem(
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.remove_red_eye),
+                                      SizedBox(width: 10),
+                                      Text('Voir l\'utilisateur'),
+                                    ],
+                                  ),
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => UserFormPage(
+                                          user: snapshot.data![index],
+                                          settingsController:
+                                              widget.settingsController,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                PopupMenuItem(
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.edit),
+                                      SizedBox(width: 10),
+                                      Text('Modifier'),
+                                    ],
+                                  ),
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => UserFormPage(
+                                          user: snapshot.data![index],
+                                          settingsController:
+                                              widget.settingsController,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                PopupMenuItem(
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.delete),
+                                      SizedBox(width: 10),
+                                      Text('Supprimer'),
+                                    ],
+                                  ),
+                                  onTap: () async {
+                                    await showDialog(
+                                      context: context,
+                                      builder: (context) => AlertDialog(
+                                        title: Text('Confirmation'),
+                                        content: Text(
+                                            'Voulez-vous vraiment supprimer cet utilisateur ?'),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () {
+                                              Navigator.pop(context);
+                                            },
+                                            child: Text('Non'),
+                                          ),
+                                          TextButton(
+                                            onPressed: () async {
+                                              await _userService.deleteUser(
+                                                  snapshot
+                                                      .data![index].userId!);
+                                              setState(() {});
+                                              Navigator.pop(context);
+                                            },
+                                            child: Text('Oui'),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 5),
+                        Text(
+                          snapshot.data![index].prenom,
+                          style: TextStyle(fontSize: 16),
+                        ),
+                        SizedBox(height: 10),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+          } else if (snapshot.hasError) {
+            return Center(
+              child: Text('Erreur : ${snapshot.error}'),
+            );
+          } else {
+            return Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => UserFormPage(
+                      settingsController: widget.settingsController,
+                    )),
           );
         },
+        child: Icon(Icons.add),
+        backgroundColor: widget.settingsController.primaryColor,
       ),
     );
   }
 }
 
-class UserFormScreen extends StatefulWidget {
+class UserFormPage extends StatefulWidget {
   final User? user;
+  final SettingsController settingsController;
 
-  const UserFormScreen({
-    Key? key,
-    this.user,
-  }) : super(key: key);
+  UserFormPage({this.user, required this.settingsController});
 
   @override
-  _UserFormScreenState createState() => _UserFormScreenState();
+  _UserFormPageState createState() => _UserFormPageState();
 }
 
-class _UserFormScreenState extends State<UserFormScreen> {
+class _UserFormPageState extends State<UserFormPage> {
+  final UserService _userService = UserService();
   final _formKey = GlobalKey<FormState>();
-  final _userService = UserService();
-
-  late String _nom;
-  late String _prenom;
-  late String _email;
-  late String _role;
-  late String _telephone;
-  late String _adresse;
-  late String _motDePasse;
+  String _nom = '';
+  String _prenom = '';
+  String _email = '';
+  String _motDePasse = '';
+  String _avatar = '';
+  String _role = '';
+  String _telephone = '';
+  String _adresse = '';
+  DateTime _dateInscription = DateTime.now();
 
   @override
   void initState() {
@@ -112,43 +209,12 @@ class _UserFormScreenState extends State<UserFormScreen> {
       _nom = widget.user!.nom;
       _prenom = widget.user!.prenom;
       _email = widget.user!.email;
+      _motDePasse = widget.user!.motDePasse;
+      _avatar = widget.user!.avatar;
       _role = widget.user!.role;
       _telephone = widget.user!.telephone;
       _adresse = widget.user!.adresse;
-      _motDePasse = widget.user!.motDePasse;
-    } else {
-      _nom = '';
-      _prenom = '';
-      _email = '';
-      _role = '';
-      _telephone = '';
-      _adresse = '';
-      _motDePasse = '';
-    }
-  }
-
-  Future<void> _saveUser() async {
-    if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
-
-      final user = User(
-        userId: widget.user?.userId ?? '',
-        nom: _nom,
-        prenom: _prenom,
-        email: _email,
-        role: _role,
-        telephone: _telephone,
-        adresse: _adresse,
-        motDePasse: _motDePasse,
-      );
-
-      if (widget.user == null) {
-        await _userService.createUser(user);
-      } else {
-        await _userService.updateUser(user);
-      }
-
-      Navigator.pop(context);
+      _dateInscription = widget.user!.dateInscription;
     }
   }
 
@@ -156,76 +222,223 @@ class _UserFormScreenState extends State<UserFormScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.user == null
-            ? 'Ajouter un Utilisateur'
-            : 'Modifier un Utilisateur'),
+        title: Text(
+            widget.user != null ? 'Modifier utilisateur' : 'Créer utilisateur'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              TextFormField(
-                initialValue: _nom,
-                decoration: const InputDecoration(labelText: 'Nom'),
-                validator: (value) =>
-                    value!.isEmpty ? 'Veuillez entrer un nom' : null,
-                onSaved: (value) => _nom = value!,
-              ),
-              TextFormField(
-                initialValue: _prenom,
-                decoration: const InputDecoration(labelText: 'Prénom'),
-                validator: (value) =>
-                    value!.isEmpty ? 'Veuillez entrer un prénom' : null,
-                onSaved: (value) => _prenom = value!,
-              ),
-              TextFormField(
-                initialValue: _email,
-                decoration: const InputDecoration(labelText: 'Email'),
-                validator: (value) =>
-                    value!.isEmpty ? 'Veuillez entrer un email' : null,
-                onSaved: (value) => _email = value!,
-              ),
-              TextFormField(
-                initialValue: _role,
-                decoration: const InputDecoration(labelText: 'Rôle'),
-                validator: (value) =>
-                    value!.isEmpty ? 'Veuillez entrer un rôle' : null,
-                onSaved: (value) => _role = value!,
-              ),
-              TextFormField(
-                initialValue: _telephone,
-                decoration: const InputDecoration(labelText: 'Téléphone'),
-                validator: (value) => value!.isEmpty
-                    ? 'Veuillez entrer un numéro de téléphone'
-                    : null,
-                onSaved: (value) => _telephone = value!,
-              ),
-              TextFormField(
-                initialValue: _adresse,
-                decoration: const InputDecoration(labelText: 'Adresse'),
-                validator: (value) =>
-                    value!.isEmpty ? 'Veuillez entrer une adresse' : null,
-                onSaved: (value) => _adresse = value!,
-              ),
-              TextFormField(
-                initialValue: _motDePasse,
-                decoration: const InputDecoration(labelText: 'Mot de Passe'),
-                validator: (value) =>
-                    value!.isEmpty ? 'Veuillez entrer un mot de passe' : null,
-                onSaved: (value) => _motDePasse = value!,
-                obscureText: true,
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _saveUser,
-                child: const Text('Enregistrer'),
-              ),
-            ],
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                TextFormField(
+                  initialValue: _nom,
+                  decoration: InputDecoration(
+                    labelText: 'Nom',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Entrez un nom';
+                    }
+                    return null;
+                  },
+                  onSaved: (value) => _nom = value!,
+                ),
+                const SizedBox(height: 20),
+                TextFormField(
+                  initialValue: _prenom,
+                  decoration: InputDecoration(
+                    labelText: 'Prénom',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Entrez un prénom';
+                    }
+                    return null;
+                  },
+                  onSaved: (value) => _prenom = value!,
+                ),
+                const SizedBox(height: 20),
+                TextFormField(
+                  initialValue: _email,
+                  decoration: InputDecoration(
+                    labelText: 'Email',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Entrez un email';
+                    }
+                    return null;
+                  },
+                  onSaved: (value) => _email = value!,
+                ),
+                const SizedBox(height: 20),
+                TextFormField(
+                  initialValue: _motDePasse,
+                  decoration: InputDecoration(
+                    labelText: 'Mot de passe',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Entrez un mot de passe';
+                    }
+                    return null;
+                  },
+                  onSaved: (value) => _motDePasse = value!,
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: () async {
+                    final pickedFile = await FilePicker.platform.pickFiles(
+                      type: FileType.image,
+                    );
+
+                    if (pickedFile != null) {
+                      setState(() {
+                        _avatar = pickedFile.files.first.path!;
+                      });
+                    }
+                  },
+                  child: Text('Télécharger l\'avatar'),
+                ),
+                CircleAvatar(
+                  radius: 50,
+                  backgroundImage:
+                      _avatar.isNotEmpty ? FileImage(File(_avatar)) : null,
+                ),
+                const SizedBox(height: 20),
+                DropdownButtonFormField(
+                  decoration: InputDecoration(
+                    labelText: 'Rôle',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                    ),
+                    filled: true,
+                  ),
+                  items: [
+                    DropdownMenuItem(
+                      child: Text('Administrateur'),
+                      value: 'Administrateur',
+                    ),
+                    DropdownMenuItem(
+                      child: Text('Agent'),
+                      value: 'Agent',
+                    ),
+                    DropdownMenuItem(
+                      child: Text('Utilisateur'),
+                      value: 'Utilisateur',
+                    ),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      _role = value as String;
+                    });
+                  },
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Veuillez sélectionner un rôle';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 20),
+                TextFormField(
+                  initialValue: _telephone,
+                  decoration: InputDecoration(
+                    labelText: 'Téléphone',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Entrez un téléphone';
+                    }
+                    return null;
+                  },
+                  onSaved: (value) => _telephone = value!,
+                ),
+                const SizedBox(height: 20),
+                TextFormField(
+                  initialValue: _adresse,
+                  decoration: InputDecoration(
+                    labelText: 'Adresse',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Entrez une adresse';
+                    }
+                    return null;
+                  },
+                  onSaved: (value) => _adresse = value!,
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: _submitForm,
+                  child: Text(widget.user != null
+                      ? 'Modifier utilisateur'
+                      : 'Créer utilisateur'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: widget.settingsController.primaryColor,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
+  }
+
+  void _submitForm() async {
+    if (_formKey.currentState!.validate()) {
+      _formKey.currentState!.save();
+      if (widget.user != null) {
+        await _userService.updateUser(User(
+          userId: widget.user!.userId,
+          nom: _nom,
+          prenom: _prenom,
+          email: _email,
+          motDePasse: _motDePasse,
+          avatar: _avatar,
+          role: _role,
+          telephone: _telephone,
+          adresse: _adresse,
+          dateInscription: _dateInscription,
+        ));
+      } else {
+        await _userService.createUser(User(
+          nom: _nom,
+          prenom: _prenom,
+          email: _email,
+          motDePasse: _motDePasse,
+          avatar: _avatar,
+          role: _role,
+          telephone: _telephone,
+          adresse: _adresse,
+          dateInscription: _dateInscription,
+        ));
+      }
+      Navigator.pop(context);
+    }
   }
 }
